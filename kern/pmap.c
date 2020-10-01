@@ -8,7 +8,6 @@
 
 #include <kern/pmap.h>
 #include <kern/kclock.h>
-#include <kern/env.h>
 
 // These variables are set by i386_detect_memory()
 size_t npages;			// Amount of physical memory (in pages)
@@ -103,7 +102,7 @@ boot_alloc(uint32_t n)
 	// to a multiple of PGSIZE.
 	//
 	// LAB 2: Your code here.
-	cprintf("boot_alloc");
+//	cprintf("boot_alloc");
 	result=nextfree;
 	nextfree=ROUNDUP((char *)result+n,PGSIZE);
 	if((uint32_t)nextfree<npages*PGSIZE+KERNBASE)
@@ -186,7 +185,7 @@ mem_init(void)
 	//      (ie. perm = PTE_U | PTE_P)
 	//    - pages itself -- kernel RW, user NONE
 	// Your code goes here:
-	boot_map_region(kern_pgdir,UPAGES,PGSIZE,PADDR(pages),PTE_U );
+	boot_map_region(kern_pgdir,UPAGES,sizeof(struct PageInfo)*npages,PADDR(pages),PTE_U );
 
 	//////////////////////////////////////////////////////////////////////
 	// Map the 'envs' array read-only by the user at linear address UENVS
@@ -302,7 +301,7 @@ page_init(void)
         cprintf("npages_extmem:%d npages_freeextmem:%d \n",npages_extmem,npages_freeextmem);
         cprintf("npages_extmem_VA:%08x\n",page2kva(&pages[npages_extmem]));
 		*/
-	cprintf("page_init\n");
+//	cprintf("page_init\n");
 	size_t i=0;
 	pages[0].pp_ref=1;
 	pages[0].pp_link=NULL;
@@ -339,11 +338,11 @@ struct PageInfo *
 page_alloc(int alloc_flags)
 {
 	// Fill this function in
-	cprintf("page_alloc\n");
+//	cprintf("page_alloc\n");
 	struct PageInfo* nowpage=page_free_list;
 	if(nowpage==NULL)
 	{
-		cprintf("page_alloc:	no page_free_list\n");
+//		cprintf("page_alloc:	no page_free_list\n");
 		return NULL;
 	}
 	page_free_list=page_free_list->pp_link;
@@ -363,7 +362,7 @@ page_free(struct PageInfo *pp)
 	// Fill this function in
 	// Hint: You may want to panic if pp->pp_ref is nonzero or
 	// pp->pp_link is not NULL.
-	cprintf("page_free");
+//	cprintf("page_free");
 	if(pp->pp_ref!=0&&pp->pp_link!=NULL)
 	panic("page_free: the pp->pp_ref is nonzero or pp->pp_link is not NULL ");
 	pp->pp_link=page_free_list;
@@ -481,22 +480,19 @@ static void
 boot_map_region(pde_t *pgdir, uintptr_t va, size_t size, physaddr_t pa, int perm)
 {
 	// Fill this function in
-	uintptr_t  a,last;
-	a=(uintptr_t)ROUNDDOWN(va,PGSIZE);
-	last=(uintptr_t)ROUNDDOWN(va+size,PGSIZE);
-	for(;;)
-	{
-		pte_t* pte=pgdir_walk(pgdir,(const void *)a,1);
-		if(pte==NULL)
-		{
-			panic("boot_map_region(): out of memory\n");
-		}
-		*pte=pa | perm | PTE_P;
-		if(a==last)
-		break;
-		a+=PGSIZE;
-		pa+=PGSIZE;
-	}
+        // Fill this function in
+        size_t  num = size/PGSIZE;
+        for ( size_t i = 0 ; i < num ; i++)
+        {
+                uintptr_t cur_va = va + i*PGSIZE;
+                pte_t * entry = pgdir_walk(pgdir,(const void*)cur_va,1);
+                if (!entry)
+                {
+                        panic("pgdir_walk return NULL!");
+                }
+                physaddr_t cur_pa = pa + i*PGSIZE;
+                *entry = cur_pa | perm | PTE_P;
+        }
 }
 
 //
@@ -530,7 +526,7 @@ page_insert(pde_t *pgdir, struct PageInfo *pp, void *va, int perm)
 	// Fill this function in
 	pte_t * pte;
 	pte=pgdir_walk(pgdir,va,1);
-	cprintf("page_insert:	pte=%d",pte);
+//	cprintf("page_insert:	pte=%d",pte);
 	if(pte==NULL)
 	{
 		return  -E_NO_MEM;

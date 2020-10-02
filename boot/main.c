@@ -2,7 +2,7 @@
 #include <inc/elf.h>
 
 /**********************************************************************
- * This a dirt simple boot loader, whose sole job is to boot
+ * This a dirt simple boot boot, whose sole job is to boot
  * an ELF kernel image from the first IDE hard disk.
  *
  * DISK LAYOUT
@@ -48,7 +48,7 @@ bootmain(void)
 		goto bad;
 
 	// load each program segment (ignores ph flags)
-	ph = (struct Proghdr *) ((uint8_t *) ELFHDR + ELFHDR->e_phoff);
+	ph = (struct Proghdr *) ((uint8_t *) ELFHDR + ELFHDR->e_phoff); 
 	eph = ph + ELFHDR->e_phnum;
 	for (; ph < eph; ph++)
 		// p_pa is the load address of this segment (as well
